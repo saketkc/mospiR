@@ -1,0 +1,25 @@
+Package: mospiR
+Type: Package
+Title: Client for the MoSPI Microdata portal
+Version: 0.1.0
+Authors@R: person("Saket", "Choudhary", email = "saketkc@gmail.com", role = c("aut", "cre"))
+Description: Download microdata from the MoSPI (Ministry of Statistics and
+    Programme Implementation, Government of India) Microdata Portal
+    <https://microdata.gov.in>. Provides functions to list datasets, list
+    files within a dataset, and download individual files or entire datasets
+    using the MoSPI NADA API.
+License: MIT + file LICENSE
+Encoding: UTF-8
+RoxygenNote: 7.3.3
+Depends:
+    R (>= 4.1.0)
+Imports:
+    httr2 (>= 1.0.0)
+Suggests:
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+URL: https://github.com/saketkc/mospiR
+BugReports: https://github.com/saketkc/mospiR/issues
