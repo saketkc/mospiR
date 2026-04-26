@@ -1,0 +1,113 @@
+---
+title: "Getting Started with mospiR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with mospiR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment  = "#>",
+  eval     = nchar(Sys.getenv("MOSPI_KEY")) > 0
+)
+api_key <- Sys.getenv("MOSPI_KEY")
+```
+
+mospiR downloads survey microdata from the [MoSPI Microdata Portal](https://microdata.gov.in),
+India's NSO repository. It wraps the NADA API and manages authentication, pagination, and retries.
+
+## Installation
+
+```{r install, eval=FALSE}
+remotes::install_github("saketkc/mospiR")
+```
+
+## API key
+
+Register at <https://microdata.gov.in> and copy your key from **My Profile → API Key**.
+Add it to `~/.Renviron`:
+
+```
+MOSPI_KEY=your_key_here
+```
+
+Reload with `readRenviron("~/.Renviron")` or restart R.
+
+```{r key-env}
+library(mospiR)
+api_key <- Sys.getenv("MOSPI_KEY")
+```
+
+## Listing datasets
+
+`list_datasets()` fetches all pages and returns one data frame. Pass `query` to filter by
+title (client-side, case-insensitive).
+
+```{r list-all}
+datasets <- list_datasets(api_key)
+cat("Total datasets:", nrow(datasets), "\n")
+head(datasets[, c("idno", "title")], 6)
+```
+
+```{r search}
+plfs <- list_datasets(api_key, query = "labour force")
+plfs[, c("idno", "title")]
+```
+
+## Listing files in a dataset
+
+```{r list-files}
+files <- list_files("DDI-IND-NSO-ASI-2019-20", api_key)
+files[, c("name", "size")]
+```
+
+## Downloading files
+
+`download_file()` writes one file to `folder_path` and returns the local path invisibly.
+
+```{r download-file, eval=FALSE}
+path <- download_file(
+  dataset_id  = "DDI-IND-NSO-ASI-2019-20",
+  file_name   = "ASI_DATA_2019_20_CSV.zip",
+  folder_path = "data/asi-2019-20",
+  api_key     = api_key
+)
+```
+
+`download_dataset()` downloads every file in the dataset:
+
+```{r download-dataset, eval=FALSE}
+paths <- download_dataset(
+  dataset_id  = "DDI-IND-NSO-ASI-2019-20",
+  folder_path = "data/asi-2019-20",
+  api_key     = api_key
+)
+length(paths)
+```
+
+If the file name doesn't match, `download_file()` reports what's available:
+
+```{r download-missing}
+result <- download_file("DDI-IND-NSO-ASI-2019-20", "nonexistent.csv",
+                        tempdir(), api_key)
+```
+
+## HCES rounds
+
+The portal has all rounds of the Household Consumer Expenditure Survey. Filter by title,
+then download in a loop:
+
+```{r hces-find}
+hces_all <- list_datasets(api_key, query = "consumer expenditure")
+cat("Matching datasets:", nrow(hces_all), "\n")
+hces_all[, c("idno", "title")]
+```
+
+```{r hces-download, eval=FALSE}
+for (id in hces_all$idno) {
+  download_dataset(id, file.path("data", "hces", id), api_key)
+}
+```

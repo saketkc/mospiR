@@ -1,0 +1,167 @@
+---
+title: "Working with HCES Nesstar files using nesstarR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Working with HCES Nesstar files using nesstarR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+
+# pkgdown sets opts_knit$root.dir to the package root before knitting.
+# When rendering locally from vignettes/, ".." resolves to the package root.
+pkg_root <- {
+  rd <- knitr::opts_knit$get("root.dir")
+  if (!is.null(rd) && nzchar(rd)) normalizePath(rd) else normalizePath("..")
+}
+nesstar_path <- file.path(
+  pkg_root, "data", "hces",
+  "DDI-IND-NSSO-66-SCHEDULE-1.0T2",
+  "Nss66_1.0-type2_new format-1",
+  "survey0", "data",
+  "nss66_consumer_expenditure_type_2.Nesstar"
+)
+```
+
+NSS rounds 64, 66, and 68 come as `.Nesstar` binaries packed inside `.rar` archives.
+This vignette covers downloading one round with mospiR, extracting the archive, and
+reading the data with [nesstarR](https://github.com/saketkc/nesstarR).
+
+## Prerequisites
+
+```{r install, eval=FALSE}
+remotes::install_github("saketkc/mospiR")
+remotes::install_github("saketkc/nesstarR")
+```
+
+```{r libs}
+library(mospiR)
+library(nesstarR)
+```
+
+## Download from the portal
+
+```{r download, eval=FALSE}
+api_key <- Sys.getenv("MOSPI_KEY")
+
+download_dataset(
+  "DDI-IND-NSSO-66-SCHEDULE-1.0T2",
+  file.path("data", "hces", "DDI-IND-NSSO-66-SCHEDULE-1.0T2"),
+  api_key
+)
+```
+
+The download is a `.rar` archive, about 54 MB for NSS 66 T2.
+
+## Extract the archive
+
+`unar` (macOS/Linux) and `unrar` (Windows) both work. Either must be on your `PATH`.
+
+```{r extract, eval=FALSE}
+rar_file <- file.path(
+  "data", "hces", "DDI-IND-NSSO-66-SCHEDULE-1.0T2",
+  "Nss66_1.0-type2_new format.rar"
+)
+system2("unar", c("-o", dirname(rar_file), shQuote(rar_file)))
+```
+
+Extraction produces a folder with the `.Nesstar` binary, `ddi.xml` (variable metadata),
+and supporting documents.
+
+## Parse the Nesstar file
+
+`nesstar_parse()` reads the binary header without loading any row data. Data loads
+only when you call `nesstar_read_dataset()` on a specific dataset number.
+
+```{r parse}
+nb <- nesstar_parse(nesstar_path)
+nb
+```
+
+## Dataset structure
+
+A single `.Nesstar` file holds multiple datasets, one per schedule block.
+
+```{r datasets}
+nesstar_datasets(nb)
+```
+
+Dataset 21 is the food block: 4.8 million item-level rows across roughly 100,000 households.
+
+## Variable listing
+
+```{r variables}
+vars <- nesstar_variables(nb, dataset_number = 21)
+vars[, c("name", "variable_id", "width_value")]
+```
+
+Key columns in the food block:
+
+| Column | Meaning |
+|--------|---------|
+| `HH_ID` | Household identifier |
+| `State` | State code (2-digit) |
+| `State_District` | District code (4-digit: state × 100 + district) |
+| `Item_code` | Food item code (NSS 66 coding) |
+| `Total_Value` | Household monthly expenditure (Rs) |
+| `Multiplier` | Survey weight |
+
+## Read a dataset
+
+```{r read}
+food <- nesstar_read_dataset(nb, dataset_number = 21)
+cat("Rows:", nrow(food), "| Columns:", ncol(food), "\n")
+head(food[, c("HH_ID", "State", "State_District",
+              "Item_code", "Total_Value", "Multiplier")])
+```
+
+## Quick check: cereal spending by sector
+
+Weighted mean monthly expenditure on cereals (item codes 101-128), rural vs. urban:
+
+```{r explore}
+cereals    <- food[food$Item_code >= 101 & food$Item_code <= 128, ]
+hh_cereals <- aggregate(Total_Value ~ HH_ID + Sector + Multiplier,
+                        data = cereals, FUN = sum)
+rural <- hh_cereals[hh_cereals$Sector == 1, ]
+urban <- hh_cereals[hh_cereals$Sector == 2, ]
+
+cat(sprintf(
+  "Weighted mean cereal expenditure (Rs/month):\n  Rural: %.0f\n  Urban: %.0f\n",
+  weighted.mean(rural$Total_Value, rural$Multiplier, na.rm = TRUE),
+  weighted.mean(urban$Total_Value, urban$Multiplier, na.rm = TRUE)
+))
+```
+
+## Export to CSV
+
+`nesstar_export()` writes one CSV per dataset to `output_dir`.
+
+```{r export}
+output_dir <- file.path(tempdir(), "nss66t2")
+nesstar_export(nb, output_dir = output_dir, compress = FALSE)
+list.files(output_dir)
+```
+
+Pass `compress = TRUE` for `.csv.gz` output.
+
+## Round reference
+
+| Round | idno | Period | Format |
+|-------|------|--------|--------|
+| NSS 57th | `DDI-IND-MOSPI-NSSO-57Rnd-Sch1.0-2001` | 2001 | CSV zip |
+| NSS 58th | `DDI-IND-MOSPI-NSSO-58Rnd-Sch1.0-2002` | 2002 | CSV zip |
+| NSS 59th | `DDI-IND-MOSPI-NSSO-59Rnd-Sch1.0-2003` | 2003 | CSV zip |
+| NSS 60th | `DDI-IND-MOSPI-NSSO-60Rnd-Sch1-Jan-June2004` | 2004 | CSV zip |
+| NSS 61st | `DDI-IND-MOSPI-NSSO-61Rnd-Sch1-July2004-June2005` | 2004-05 | CSV zip |
+| NSS 62nd | `DDI-IND-MOSPI-NSSO-62Rnd-Sch1.0-2005-06` | 2005-06 | CSV zip |
+| NSS 63rd | `DDI-IND-MOSPI-NSSO-63Rnd-Sch1.0-2006-07` | 2006-07 | CSV zip |
+| NSS 64th | `IND-NSSO-HCES-2007-v1` | 2007-08 | Nesstar |
+| NSS 66th T1 | `DDI-IND-NSSO-66-SCHEDULE-1.0T1` | 2009-10 | Nesstar |
+| NSS 66th T2 | `DDI-IND-NSSO-66-SCHEDULE-1.0T2` | 2009-10 | Nesstar |
+| NSS 68th T1 | `DDI-IND-MOSPI-NSSO-68Rnd-Sch1.0-July2011-June2012` | 2011-12 | Nesstar |
+| NSS 68th T2 | `DDI-IND-MOSPI-NSSO-68Rnd-Sch2.0-July2011-June2012` | 2011-12 | Nesstar |
+
+Rounds 57-63 unzip to CSVs. Rounds 64, 66, and 68 need nesstarR.
