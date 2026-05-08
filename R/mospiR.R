@@ -1,18 +1,19 @@
 BASE_URL <- "https://microdata.gov.in/NADA/index.php/api"
-MAX_RETRIES <- 4
-RETRY_DELAY <- 3
+MAX_RETRIES <- 6
+RETRY_DELAY <- 2
 
-#' @importFrom httr2 request req_headers req_url_query req_perform resp_body_json resp_body_raw req_retry resp_status
+#' @importFrom httr2 request req_headers req_url_query req_perform resp_body_json resp_body_raw req_retry resp_status req_throttle
 NULL
 
 .request_with_retry <- function(url, api_key, query = list()) {
   req <- request(url) |>
     req_headers("X-API-KEY" = api_key) |>
+    req_throttle(rate = 10 / 60) |>
     req_retry(
       max_tries = MAX_RETRIES,
       retry_on_failure = FALSE,
       is_transient = function(resp) resp_status(resp) %in% c(401, 429, 500, 502, 503, 504),
-      backoff = function(attempt) RETRY_DELAY * attempt
+      backoff = function(attempt) RETRY_DELAY * (2^(attempt - 1))
     )
 
   if (length(query) > 0) {
@@ -147,6 +148,9 @@ list_files <- function(dataset_id, api_key) {
 #' @param file_name File name as returned by [list_files()].
 #' @param folder_path Destination directory; created if missing.
 #' @param api_key MoSPI API key.
+#' @param .files_cache Pre-fetched file list from [list_files()]. If `NULL`
+#'   (default), the file list is fetched automatically. Pass this to avoid
+#'   redundant API calls when downloading multiple files from the same dataset.
 #'
 #' @return Path to the saved file (invisibly). `NULL` on failure.
 #' @export
@@ -155,10 +159,13 @@ list_files <- function(dataset_id, api_key) {
 #' \dontrun{
 #' path <- download_file("DDI-IND-NSO-ASI-2020-21", "ASI_DATA.zip", "./data", "your-api-key")
 #' }
-download_file <- function(dataset_id, file_name, folder_path, api_key) {
+download_file <- function(dataset_id, file_name, folder_path, api_key, .files_cache = NULL) {
   dir.create(folder_path, showWarnings = FALSE, recursive = TRUE)
 
-  files <- list_files(dataset_id, api_key)
+  files <- .files_cache
+  if (is.null(files)) {
+    files <- list_files(dataset_id, api_key)
+  }
   if (is.null(files)) {
     message("Failed to retrieve file list.")
     return(invisible(NULL))
@@ -179,6 +186,8 @@ download_file <- function(dataset_id, file_name, folder_path, api_key) {
 #' @param dataset_id Dataset `idno`.
 #' @param folder_path Destination directory; created if missing.
 #' @param api_key MoSPI API key.
+#' @param overwrite If `FALSE` (default), skip files that already exist
+#'   in `folder_path`.
 #'
 #' @return Character vector of saved file paths (invisibly).
 #' @export
@@ -187,7 +196,7 @@ download_file <- function(dataset_id, file_name, folder_path, api_key) {
 #' \dontrun{
 #' paths <- download_dataset("DDI-IND-NSO-ASI-2020-21", "./data", "your-api-key")
 #' }
-download_dataset <- function(dataset_id, folder_path, api_key) {
+download_dataset <- function(dataset_id, folder_path, api_key, overwrite = FALSE) {
   dir.create(folder_path, showWarnings = FALSE, recursive = TRUE)
 
   files <- list_files(dataset_id, api_key)
@@ -200,9 +209,20 @@ download_dataset <- function(dataset_id, folder_path, api_key) {
     return(invisible(character(0)))
   }
 
-  results <- lapply(seq_len(nrow(files)), function(i) {
-    .download_one_file(dataset_id, files$name[i], files$base64[i], folder_path, api_key)
-  })
+  message("Downloading ", nrow(files), " files for '", dataset_id, "'")
+
+  results <- vector("list", nrow(files))
+  for (i in seq_len(nrow(files))) {
+    dest <- file.path(folder_path, files$name[i])
+    if (!overwrite && file.exists(dest)) {
+      message("  [", i, "/", nrow(files), "] SKIP (exists): ", files$name[i])
+      results[[i]] <- dest
+      next
+    }
+    results[[i]] <- .download_one_file(
+      dataset_id, files$name[i], files$base64[i], folder_path, api_key
+    )
+  }
 
   invisible(Filter(Negate(is.null), unlist(results)))
 }

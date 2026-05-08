@@ -91,8 +91,10 @@ length(paths)
 If the file name doesn't match, `download_file()` reports what's available:
 
 ```{r download-missing}
-result <- download_file("DDI-IND-NSO-ASI-2019-20", "nonexistent.csv",
-                        tempdir(), api_key)
+result <- download_file(
+  "DDI-IND-NSO-ASI-2019-20", "nonexistent.csv",
+  tempdir(), api_key
+)
 ```
 
 ## HCES rounds

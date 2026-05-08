@@ -113,8 +113,10 @@ Key columns in the food block:
 ```{r read}
 food <- nesstar_read_dataset(nb, dataset_number = 21)
 cat("Rows:", nrow(food), "| Columns:", ncol(food), "\n")
-head(food[, c("HH_ID", "State", "State_District",
-              "Item_code", "Total_Value", "Multiplier")])
+head(food[, c(
+  "HH_ID", "State", "State_District",
+  "Item_code", "Total_Value", "Multiplier"
+)])
 ```
 
 ## Quick check: cereal spending by sector
@@ -122,9 +124,10 @@ head(food[, c("HH_ID", "State", "State_District",
 Weighted mean monthly expenditure on cereals (item codes 101-128), rural vs. urban:
 
 ```{r explore}
-cereals    <- food[food$Item_code >= 101 & food$Item_code <= 128, ]
+cereals <- food[food$Item_code >= 101 & food$Item_code <= 128, ]
 hh_cereals <- aggregate(Total_Value ~ HH_ID + Sector + Multiplier,
-                        data = cereals, FUN = sum)
+  data = cereals, FUN = sum
+)
 rural <- hh_cereals[hh_cereals$Sector == 1, ]
 urban <- hh_cereals[hh_cereals$Sector == 2, ]
 
