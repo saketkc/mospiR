@@ -40,21 +40,63 @@ NULL
   )
 }
 
-.download_one_file <- function(dataset_id, file_name, b64, folder_path, api_key) {
+.download_one_file <- function(dataset_id, file_name, b64, folder_path, api_key,
+                               expected_size = NULL) {
   url <- paste0(BASE_URL, "/fileslist/download/", dataset_id, "/", b64)
+  file_path <- file.path(folder_path, file_name)
   tryCatch(
     {
       resp <- .request_with_retry(url, api_key)
-      file_path <- file.path(folder_path, file_name)
-      writeBin(resp_body_raw(resp), file_path)
-      message("Downloaded: ", file_path)
+      body <- resp_body_raw(resp)
+
+      if (length(body) == 0) {
+        message("Error downloading '", file_name, "': empty response body")
+        return(NULL)
+      }
+
+      writeBin(body, file_path)
+
+      if (!file.exists(file_path) || file.size(file_path) == 0) {
+        if (file.exists(file_path)) file.remove(file_path)
+        message("Error downloading '", file_name, "': file is empty after write")
+        return(NULL)
+      }
+
+      if (!is.null(expected_size)) {
+        actual <- file.size(file_path)
+        expected_bytes <- .parse_size_string(expected_size)
+        if (!is.na(expected_bytes) && actual < expected_bytes * 0.9) {
+          message("Warning: '", file_name, "' size mismatch: ",
+                  "expected ~", expected_size, ", got ",
+                  format(actual, big.mark = ","), " bytes")
+        }
+      }
+
+      message("Downloaded: ", file_path,
+              " (", format(file.size(file_path), big.mark = ","), " bytes)")
       file_path
     },
     error = function(e) {
+      if (file.exists(file_path) && file.size(file_path) == 0) {
+        file.remove(file_path)
+      }
       message("Error downloading '", file_name, "': ", conditionMessage(e))
       NULL
     }
   )
+}
+
+#' Parse a human-readable size string (e.g., "116.95 MB") to bytes
+#' @noRd
+.parse_size_string <- function(size_str) {
+  if (is.null(size_str) || is.na(size_str) || !nzchar(size_str)) return(NA_real_)
+  size_str <- trimws(size_str)
+  m <- regmatches(size_str, regexec("^([0-9.]+)\\s*(KB|MB|GB|B)$", size_str, ignore.case = TRUE))[[1]]
+  if (length(m) < 3) return(NA_real_)
+  num <- as.numeric(m[2])
+  unit <- toupper(m[3])
+  multiplier <- switch(unit, "B" = 1, "KB" = 1024, "MB" = 1024^2, "GB" = 1024^3, 1)
+  num * multiplier
 }
 
 #' List datasets from the MoSPI Microdata Portal
@@ -178,7 +220,9 @@ download_file <- function(dataset_id, file_name, folder_path, api_key, .files_ca
     return(invisible(NULL))
   }
 
-  invisible(.download_one_file(dataset_id, file_name, files$base64[idx[1]], folder_path, api_key))
+  expected <- if ("size" %in% names(files)) files$size[idx[1]] else NULL
+  invisible(.download_one_file(dataset_id, file_name, files$base64[idx[1]], folder_path, api_key,
+                                expected_size = expected))
 }
 
 #' Download all files for a dataset
@@ -219,8 +263,10 @@ download_dataset <- function(dataset_id, folder_path, api_key, overwrite = FALSE
       results[[i]] <- dest
       next
     }
+    expected <- if ("size" %in% names(files)) files$size[i] else NULL
     results[[i]] <- .download_one_file(
-      dataset_id, files$name[i], files$base64[i], folder_path, api_key
+      dataset_id, files$name[i], files$base64[i], folder_path, api_key,
+      expected_size = expected
     )
   }
 
