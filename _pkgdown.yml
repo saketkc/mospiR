@@ -46,8 +46,8 @@ navbar:
       menu:
       - text: "Getting started with mospiR"
         href: articles/mospiR.html
-      - text: "Working with HCES Nesstar files using nesstarR"
-        href: articles/hces-to-csv.html
+      - text: "Reproduce a published HCES estimate"
+        href: articles/hces-mpce.html
     github:
       icon: fab fa-github fa-lg
       href: https://github.com/saketkc/mospiR

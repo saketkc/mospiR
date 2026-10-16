@@ -9,9 +9,10 @@ Description: Download unit-level survey microdata from the Ministry of
     Statistics and Programme Implementation ('MoSPI', Government of India)
     Microdata Portal <https://microdata.gov.in>. Provides functions to list
     datasets, list files within a dataset, and download individual files or
-    entire datasets through the portal's 'NADA' API.
+    entire datasets through the portal's 'NADA' API. 
 License: MIT + file LICENSE
 Encoding: UTF-8
+Language: en-US
 Depends:
     R (>= 4.1.0)
 Imports:
@@ -22,7 +23,7 @@ Suggests:
     rmarkdown
 VignetteBuilder: knitr
 Config/testthat/edition: 3
-Config/Needs/website: nesstarR, pkgdown
+Config/Needs/website: pkgdown
 URL: https://mospir.saketlab.org, https://github.com/saketkc/mospiR
 BugReports: https://github.com/saketkc/mospiR/issues
 Config/roxygen2/version: 8.1.0

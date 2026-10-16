@@ -1,4 +1,4 @@
-# Local site build; the HCES article needs NSS 66 data under data/hces, so CI cannot run it.
+# Local site build; the HCES article needs NSS 62 data under data/hces, so CI cannot run it.
 #   Rscript pkgdown/build.R
 # Set MOSPI_KEY to evaluate the getting-started vignette against the live API.
 

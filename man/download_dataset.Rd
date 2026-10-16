@@ -26,6 +26,11 @@ Download all files for a dataset
 }
 \examples{
 \dontshow{if (nzchar(Sys.getenv("MOSPI_KEY"))) withAutoprint(\{ # examplesIf}
-paths <- download_dataset("DDI-IND-NSO-ASI-2020-21", tempdir(), Sys.getenv("MOSPI_KEY"))
+\donttest{
+# This dataset is approximately 270 MB.
+paths <- download_dataset(
+  "DDI-IND-NSO-ASI-2020-21", tempdir(), Sys.getenv("MOSPI_KEY")
+)
+}
 \dontshow{\}) # examplesIf}
 }

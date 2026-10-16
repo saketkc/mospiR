@@ -6,6 +6,10 @@ The package downloads unit-level survey data from the Ministry of Statistics and
 ## Installation
 
 ```r
+# CRAN
+install.packages("mospiR")
+
+# Development version
 remotes::install_github("saketkc/mospiR")
 ```
 

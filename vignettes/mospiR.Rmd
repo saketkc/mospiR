@@ -14,6 +14,7 @@ knitr::opts_chunk$set(
   eval     = nchar(Sys.getenv("MOSPI_KEY")) > 0
 )
 api_key <- Sys.getenv("MOSPI_KEY")
+options(cli.progress_show_after = Inf)
 ```
 
 The mospiR package downloads survey microdata from the [MoSPI Microdata Portal](https://microdata.gov.in).
@@ -24,6 +25,10 @@ The package sends your API key, reads all the pages of results, and tries a fail
 ## Installation
 
 ```{r install, eval=FALSE}
+# CRAN
+install.packages("mospiR")
+
+# Development version
 remotes::install_github("saketkc/mospiR")
 ```
 
@@ -94,12 +99,14 @@ paths <- download_dataset(
 length(paths)
 ```
 
-If the file name is not correct, `download_file()` shows the names of the available files:
+If the file name is not correct, `download_file()` shows the names of the available files.
+Give the result of `list_files()` in `.files_cache`. Then the function does not get the file list again.
 
 ```{r download-missing}
 result <- download_file(
   "DDI-IND-NSO-ASI-2019-20", "nonexistent.csv",
-  tempdir(), api_key
+  tempdir(), api_key,
+  .files_cache = files
 )
 ```
 

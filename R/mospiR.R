@@ -66,14 +66,18 @@ NULL
         actual <- file.size(file_path)
         expected_bytes <- .parse_size_string(expected_size)
         if (!is.na(expected_bytes) && actual < expected_bytes * 0.9) {
-          message("Warning: the size of '", file_name, "' is not correct: ",
-                  "expected approximately ", expected_size, ", received ",
-                  format(actual, big.mark = ","), " bytes")
+          message(
+            "Warning: the size of '", file_name, "' is not correct: ",
+            "expected approximately ", expected_size, ", received ",
+            format(actual, big.mark = ","), " bytes"
+          )
         }
       }
 
-      message("Downloaded: ", file_path,
-              " (", format(file.size(file_path), big.mark = ","), " bytes)")
+      message(
+        "Downloaded: ", file_path,
+        " (", format(file.size(file_path), big.mark = ","), " bytes)"
+      )
       file_path
     },
     error = function(e) {
@@ -89,13 +93,23 @@ NULL
 #' Convert a size text (for example, "116.95 MB") to bytes
 #' @noRd
 .parse_size_string <- function(size_str) {
-  if (is.null(size_str) || is.na(size_str) || !nzchar(size_str)) return(NA_real_)
+  if (is.null(size_str) || is.na(size_str) || !nzchar(size_str)) {
+    return(NA_real_)
+  }
   size_str <- trimws(size_str)
   m <- regmatches(size_str, regexec("^([0-9.]+)\\s*(KB|MB|GB|B)$", size_str, ignore.case = TRUE))[[1]]
-  if (length(m) < 3) return(NA_real_)
+  if (length(m) < 3) {
+    return(NA_real_)
+  }
   num <- as.numeric(m[2])
   unit <- toupper(m[3])
-  multiplier <- switch(unit, "B" = 1, "KB" = 1024, "MB" = 1024^2, "GB" = 1024^3, 1)
+  multiplier <- switch(unit,
+    "B" = 1,
+    "KB" = 1024,
+    "MB" = 1024^2,
+    "GB" = 1024^3,
+    1
+  )
   num * multiplier
 }
 
@@ -199,7 +213,10 @@ list_files <- function(dataset_id, api_key) {
 #' @export
 #'
 #' @examplesIf nzchar(Sys.getenv("MOSPI_KEY"))
-#' path <- download_file("DDI-IND-NSO-ASI-2020-21", "ASI_DATA.zip", tempdir(), Sys.getenv("MOSPI_KEY"))
+#' path <- download_file(
+#'   "DDI-IND-NSO-ASI-2020-21", "DDI-IND-NSO-ASI-2020-21.xml",
+#'   tempdir(), Sys.getenv("MOSPI_KEY")
+#' )
 download_file <- function(dataset_id, file_name, folder_path, api_key, .files_cache = NULL) {
   dir.create(folder_path, showWarnings = FALSE, recursive = TRUE)
 
@@ -221,7 +238,8 @@ download_file <- function(dataset_id, file_name, folder_path, api_key, .files_ca
 
   expected <- if ("size" %in% names(files)) files$size[idx[1]] else NULL
   invisible(.download_one_file(dataset_id, file_name, files$base64[idx[1]], folder_path, api_key,
-                                expected_size = expected))
+    expected_size = expected
+  ))
 }
 
 #' Download all files for a dataset
@@ -238,7 +256,12 @@ download_file <- function(dataset_id, file_name, folder_path, api_key, .files_ca
 #' @export
 #'
 #' @examplesIf nzchar(Sys.getenv("MOSPI_KEY"))
-#' paths <- download_dataset("DDI-IND-NSO-ASI-2020-21", tempdir(), Sys.getenv("MOSPI_KEY"))
+#' \donttest{
+#' # This dataset is approximately 270 MB.
+#' paths <- download_dataset(
+#'   "DDI-IND-NSO-ASI-2020-21", tempdir(), Sys.getenv("MOSPI_KEY")
+#' )
+#' }
 download_dataset <- function(dataset_id, folder_path, api_key, overwrite = FALSE) {
   dir.create(folder_path, showWarnings = FALSE, recursive = TRUE)
 

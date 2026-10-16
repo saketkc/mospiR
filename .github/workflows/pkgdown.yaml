@@ -34,11 +34,10 @@ jobs:
           extra-packages: any::pkgdown, local::.
           needs: website
 
-      # The HCES article needs NSS 66 data that CI does not have; the swap step keeps the live copy.
-      # pkgdown publishes every top-level .md, so agent notes go too.
+      # The HCES article needs NSS 62 data that CI does not have; the swap step keeps the live copy.
       - name: Build pkgdown site
         run: |
-          rm -f vignettes/articles/hces-to-csv.Rmd CLAUDE.md AGENTS.md
+          rm -f vignettes/articles/hces-mpce.Rmd
           Rscript -e 'pkgdown::build_site(new_process = FALSE, install = FALSE)'
 
       - name: Prepare deploy directory
@@ -74,7 +73,7 @@ jobs:
           script: |
             cd ${{ env.SITE_DIR }}
             # keep the locally built HCES article (Rscript pkgdown/build.R + manual upload)
-            for f in hces-to-csv.html hces-to-csv.md; do
+            for f in hces-mpce.html hces-mpce.md; do
               [ -f docs/articles/$f ] && cp docs/articles/$f docs.new/articles/
             done
             rm -rf docs.old

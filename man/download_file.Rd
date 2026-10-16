@@ -29,6 +29,9 @@ Download a single file from a dataset
 }
 \examples{
 \dontshow{if (nzchar(Sys.getenv("MOSPI_KEY"))) withAutoprint(\{ # examplesIf}
-path <- download_file("DDI-IND-NSO-ASI-2020-21", "ASI_DATA.zip", tempdir(), Sys.getenv("MOSPI_KEY"))
+path <- download_file(
+  "DDI-IND-NSO-ASI-2020-21", "DDI-IND-NSO-ASI-2020-21.xml",
+  tempdir(), Sys.getenv("MOSPI_KEY")
+)
 \dontshow{\}) # examplesIf}
 }

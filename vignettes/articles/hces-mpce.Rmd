@@ -1,0 +1,125 @@
+---
+title: "Reproduce a published HCES estimate"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+
+# pkgdown sets root.dir to the package root; a local render runs from vignettes/articles/
+pkg_root <- normalizePath(knitr::opts_knit$get("root.dir") %||% "../..")
+id <- "DDI-IND-MOSPI-NSSO-62Rnd-Sch1.0-2005-06"
+zip_file <- file.path(
+  pkg_root, "data", "hces", id,
+  "Household Consumer Expenditure, July 2005 - June 2006_Csv.zip"
+)
+```
+
+In this article we use the Household Consumer Expenditure Survey (HCES) of NSS round 62 (July 2005 to June 2006).
+We perform these steps:
+
+1. Download the CSV files with mospiR.
+2. Read one block with base R.
+3. Calculate the average monthly per capita consumer expenditure (MPCE).
+4. Compare the result with the value in NSS Report No. 523.
+
+All analysis uses only mospiR and base R.
+
+## Download the CSV archive
+
+`list_files()` shows the files in the dataset.
+The portal supplies the data in five formats: CSV, JSON, SAS, SPSS and Stata.
+
+```{r download, eval=FALSE}
+library(mospiR)
+api_key <- Sys.getenv("MOSPI_KEY")
+id <- "DDI-IND-MOSPI-NSSO-62Rnd-Sch1.0-2005-06"
+
+files <- list_files(id, api_key)
+csv_zip <- grep("_Csv\\.zip$", files$name, value = TRUE)
+csv_zip
+
+zip_file <- download_file(id, csv_zip, file.path("data", "hces", id), api_key,
+  .files_cache = files
+)
+```
+
+## Find the blocks in the archive
+
+The archive has one CSV file for each block of Schedule 1.0.
+Blocks 5 to 11 have one row for each item.
+Block 3 has one row for each household.
+
+```{r list}
+members <- unzip(zip_file, list = TRUE)
+basename(members$Name[members$Length > 0])
+```
+
+## Read Block 3
+
+The text labels in the files use the Windows-1252 character set.
+Thus, set `encoding = "latin1"`.
+
+```{r read}
+block3 <- grep("Block 3_", members$Name, value = TRUE)
+hh <- read.csv(unz(zip_file, block3, encoding = "latin1"))
+dim(hh)
+```
+
+The DDI file of the dataset gives the labels of the columns.
+These columns are necessary for this article:
+
+| Column | Label |
+|--------|-------|
+| `Sector` | Rural or Urban |
+| `State` | State name |
+| `B3_q1` | Household size |
+| `B3_q14` | Monthly per capita expenditure (Rs) |
+| `WGT_SS_Combined` | Multiplier for the central and state samples together |
+
+```{r peek}
+head(hh[, c("HHID", "Sector", "State", "B3_q1", "B3_q14", "WGT_SS_Combined")])
+```
+
+## Average MPCE
+
+Average MPCE is the total expenditure of all persons divided by the number of persons.
+Thus, give each household a weight of multiplier × household size.
+
+```{r mpce}
+avg_mpce <- function(d) weighted.mean(d$B3_q14, d$WGT_SS_Combined * d$B3_q1)
+round(sapply(split(hh, hh$Sector), avg_mpce))
+```
+
+[NSS Report No. 523](https://mospi.gov.in/sites/default/files/press_release/Press_note_on_NSS_Report_no_523_html.pdf) gives these values for 2005-06:
+Rs 625 in rural India and Rs 1171 in urban India.
+The values from the unit-level data are the same.
+
+## Average MPCE by State
+
+```{r states}
+by_state <- sapply(split(hh, hh$Sector), function(s) {
+  sapply(split(s, s$State), avg_mpce)
+})
+round(by_state[order(by_state[, "Rural"]), ])
+```
+
+The report gives the lowest rural value for Chhattisgarh (Rs 429).
+It gives the lowest urban value for Bihar (Rs 684).
+
+Some State names in the files are not correct, for example `Andhra Pardesh`, `Gujrat` and `Maharastra`.
+
+## Rounds with CSV files
+
+These HCES rounds have a `_Csv.zip` archive on the portal.
+So you can use the same steps for each round.
+The block files and the column names can be different in each round.
+
+| Round | idno | Period |
+|-------|------|--------|
+| NSS 57th | `DDI-IND-MOSPI-NSSO-57Rnd-Sch1.0-2001` | 2001 |
+| NSS 58th | `DDI-IND-MOSPI-NSSO-58Rnd-Sch1.0-2002` | 2002 |
+| NSS 59th | `DDI-IND-MOSPI-NSSO-59Rnd-Sch1.0-2003` | 2003 |
+| NSS 60th | `DDI-IND-MOSPI-NSSO-60Rnd-Sch1-Jan-June2004` | 2004 |
+| NSS 61st | `DDI-IND-MOSPI-NSSO-61Rnd-Sch1-July2004-June2005` | 2004-05 |
+| NSS 62nd | `DDI-IND-MOSPI-NSSO-62Rnd-Sch1.0-2005-06` | 2005-06 |
+| NSS 63rd | `DDI-IND-MOSPI-NSSO-63Rnd-Sch1.0-2006-07` | 2006-07 |
