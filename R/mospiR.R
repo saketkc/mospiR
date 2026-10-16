@@ -34,7 +34,7 @@ NULL
       resp_body_json(resp)
     },
     error = function(e) {
-      message("Error fetching dataset list: ", conditionMessage(e))
+      message("Cannot get the dataset list: ", conditionMessage(e))
       NULL
     }
   )
@@ -50,7 +50,7 @@ NULL
       body <- resp_body_raw(resp)
 
       if (length(body) == 0) {
-        message("Error downloading '", file_name, "': empty response body")
+        message("Cannot download '", file_name, "': the response body is empty")
         return(NULL)
       }
 
@@ -58,7 +58,7 @@ NULL
 
       if (!file.exists(file_path) || file.size(file_path) == 0) {
         if (file.exists(file_path)) file.remove(file_path)
-        message("Error downloading '", file_name, "': file is empty after write")
+        message("Cannot download '", file_name, "': the file is empty after the write")
         return(NULL)
       }
 
@@ -66,8 +66,8 @@ NULL
         actual <- file.size(file_path)
         expected_bytes <- .parse_size_string(expected_size)
         if (!is.na(expected_bytes) && actual < expected_bytes * 0.9) {
-          message("Warning: '", file_name, "' size mismatch: ",
-                  "expected ~", expected_size, ", got ",
+          message("Warning: the size of '", file_name, "' is not correct: ",
+                  "expected approximately ", expected_size, ", received ",
                   format(actual, big.mark = ","), " bytes")
         }
       }
@@ -80,13 +80,13 @@ NULL
       if (file.exists(file_path) && file.size(file_path) == 0) {
         file.remove(file_path)
       }
-      message("Error downloading '", file_name, "': ", conditionMessage(e))
+      message("Cannot download '", file_name, "': ", conditionMessage(e))
       NULL
     }
   )
 }
 
-#' Parse a human-readable size string (e.g., "116.95 MB") to bytes
+#' Convert a size text (for example, "116.95 MB") to bytes
 #' @noRd
 .parse_size_string <- function(size_str) {
   if (is.null(size_str) || is.na(size_str) || !nzchar(size_str)) return(NA_real_)
@@ -102,18 +102,18 @@ NULL
 #' List datasets from the MoSPI Microdata Portal
 #'
 #' @param api_key MoSPI API key.
-#' @param page Page number to fetch. `NULL` (default) fetches all pages.
-#' @param query Title filter; case-insensitive substring match, applied client-side.
+#' @param page Page number to get. If `NULL` (default), the function gets all
+#'   the pages.
+#' @param query Text to find in the dataset titles. Upper case and lower case
+#'   letters are equal. The comparison occurs on your computer.
 #'
-#' @return Data frame with columns `id`, `idno`, `title`, etc. `NULL` on failure.
+#' @return A data frame with the columns `id`, `idno`, `title`, and other
+#'   columns. `NULL` if the request is not successful.
 #' @export
 #'
-#' @examples
-#' \dontrun{
-#' datasets <- list_datasets("your-api-key")
-#' labour <- list_datasets("your-api-key", query = "labour force")
-#' page1 <- list_datasets("your-api-key", page = 1)
-#' }
+#' @examplesIf nzchar(Sys.getenv("MOSPI_KEY"))
+#' page1 <- list_datasets(Sys.getenv("MOSPI_KEY"), page = 1)
+#' head(page1[, c("idno", "title")])
 list_datasets <- function(api_key, page = NULL, query = NULL) {
   if (!is.null(page)) {
     data <- .fetch_page(api_key, page)
@@ -155,16 +155,15 @@ list_datasets <- function(api_key, page = NULL, query = NULL) {
 
 #' List files available for a dataset
 #'
-#' @param dataset_id Dataset `idno` (e.g., `"DDI-IND-NSO-ASI-2020-21"`).
+#' @param dataset_id Dataset `idno`, for example `"DDI-IND-NSO-ASI-2020-21"`.
 #' @param api_key MoSPI API key.
 #'
-#' @return Data frame with columns `name`, `base64`, `size`, etc. `NULL` on failure.
+#' @return A data frame with the columns `name`, `base64`, `size`, and other
+#'   columns. `NULL` if the request is not successful.
 #' @export
 #'
-#' @examples
-#' \dontrun{
-#' files <- list_files("DDI-IND-NSO-ASI-2020-21", "your-api-key")
-#' }
+#' @examplesIf nzchar(Sys.getenv("MOSPI_KEY"))
+#' files <- list_files("DDI-IND-NSO-ASI-2020-21", Sys.getenv("MOSPI_KEY"))
 list_files <- function(dataset_id, api_key) {
   url <- paste0(BASE_URL, "/datasets/", dataset_id, "/fileslist")
   tryCatch(
@@ -178,7 +177,7 @@ list_files <- function(dataset_id, api_key) {
       .rows_to_df(files)
     },
     error = function(e) {
-      message("Error fetching file list for '", dataset_id, "': ", conditionMessage(e))
+      message("Cannot get the file list for '", dataset_id, "': ", conditionMessage(e))
       NULL
     }
   )
@@ -187,20 +186,20 @@ list_files <- function(dataset_id, api_key) {
 #' Download a single file from a dataset
 #'
 #' @param dataset_id Dataset `idno`.
-#' @param file_name File name as returned by [list_files()].
-#' @param folder_path Destination directory; created if missing.
+#' @param file_name File name from the `name` column of [list_files()].
+#' @param folder_path Destination directory. The function makes the directory
+#'   if it does not exist.
 #' @param api_key MoSPI API key.
-#' @param .files_cache Pre-fetched file list from [list_files()]. If `NULL`
-#'   (default), the file list is fetched automatically. Pass this to avoid
-#'   redundant API calls when downloading multiple files from the same dataset.
+#' @param .files_cache A file list from [list_files()]. If `NULL` (default),
+#'   the function gets the file list from the portal. Use this argument when
+#'   you download many files from one dataset. This prevents more API requests.
 #'
-#' @return Path to the saved file (invisibly). `NULL` on failure.
+#' @return The path of the saved file, as an invisible value. `NULL` if the
+#'   download is not successful.
 #' @export
 #'
-#' @examples
-#' \dontrun{
-#' path <- download_file("DDI-IND-NSO-ASI-2020-21", "ASI_DATA.zip", "./data", "your-api-key")
-#' }
+#' @examplesIf nzchar(Sys.getenv("MOSPI_KEY"))
+#' path <- download_file("DDI-IND-NSO-ASI-2020-21", "ASI_DATA.zip", tempdir(), Sys.getenv("MOSPI_KEY"))
 download_file <- function(dataset_id, file_name, folder_path, api_key, .files_cache = NULL) {
   dir.create(folder_path, showWarnings = FALSE, recursive = TRUE)
 
@@ -209,13 +208,13 @@ download_file <- function(dataset_id, file_name, folder_path, api_key, .files_ca
     files <- list_files(dataset_id, api_key)
   }
   if (is.null(files)) {
-    message("Failed to retrieve file list.")
+    message("Cannot get the file list.")
     return(invisible(NULL))
   }
 
   idx <- which(files$name == file_name)
   if (length(idx) == 0) {
-    message("File '", file_name, "' not found in dataset '", dataset_id, "'.")
+    message("File '", file_name, "' is not in dataset '", dataset_id, "'.")
     message("Available files: ", paste(files$name, collapse = ", "))
     return(invisible(NULL))
   }
@@ -228,32 +227,32 @@ download_file <- function(dataset_id, file_name, folder_path, api_key, .files_ca
 #' Download all files for a dataset
 #'
 #' @param dataset_id Dataset `idno`.
-#' @param folder_path Destination directory; created if missing.
+#' @param folder_path Destination directory. The function makes the directory
+#'   if it does not exist.
 #' @param api_key MoSPI API key.
-#' @param overwrite If `FALSE` (default), skip files that already exist
-#'   in `folder_path`.
+#' @param overwrite If `FALSE` (default), the function does not download the
+#'   files that are already in `folder_path`.
 #'
-#' @return Character vector of saved file paths (invisibly).
+#' @return A character vector of the paths of the saved files, as an
+#'   invisible value.
 #' @export
 #'
-#' @examples
-#' \dontrun{
-#' paths <- download_dataset("DDI-IND-NSO-ASI-2020-21", "./data", "your-api-key")
-#' }
+#' @examplesIf nzchar(Sys.getenv("MOSPI_KEY"))
+#' paths <- download_dataset("DDI-IND-NSO-ASI-2020-21", tempdir(), Sys.getenv("MOSPI_KEY"))
 download_dataset <- function(dataset_id, folder_path, api_key, overwrite = FALSE) {
   dir.create(folder_path, showWarnings = FALSE, recursive = TRUE)
 
   files <- list_files(dataset_id, api_key)
   if (is.null(files)) {
-    message("Failed to retrieve file list.")
+    message("Cannot get the file list.")
     return(invisible(character(0)))
   }
   if (nrow(files) == 0) {
-    message("No files found for dataset '", dataset_id, "'.")
+    message("Dataset '", dataset_id, "' has no files.")
     return(invisible(character(0)))
   }
 
-  message("Downloading ", nrow(files), " files for '", dataset_id, "'")
+  message("Dataset '", dataset_id, "': ", nrow(files), " files to download")
 
   results <- vector("list", nrow(files))
   for (i in seq_len(nrow(files))) {

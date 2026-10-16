@@ -2,4 +2,11 @@
 ^\.Rproj\.user$
 ^_pkgdown\.yml$
 ^docs$
+^pkgdown$
 ^\.github$
+^LICENSE\.md$
+^CLAUDE\.md$
+^cran-comments\.md$
+^data$
+^vignettes/articles$
+^\.claude$

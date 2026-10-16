@@ -1,6 +1,7 @@
-# mospiR
+# mospiR <img src="man/figures/logo.png" align="right" height="139" alt="mospiR logo" />
 
-An R client for the [MoSPI Microdata Portal](https://microdata.gov.in). Downloads unit-level survey data published by India's Ministry of Statistics and Programme Implementation.
+mospiR is an R client for the [MoSPI Microdata Portal](https://microdata.gov.in).
+The package downloads unit-level survey data from the Ministry of Statistics and Programme Implementation (MoSPI) of India.
 
 ## Installation
 
@@ -10,7 +11,8 @@ remotes::install_github("saketkc/mospiR")
 
 ## Setup
 
-Get an API key from [microdata.gov.in](https://microdata.gov.in), then add it to `~/.Renviron`:
+1. Get an API key from [microdata.gov.in](https://microdata.gov.in).
+2. Add the key to `~/.Renviron`:
 
 ```r
 MOSPI_KEY=your-key-here
@@ -27,13 +29,13 @@ api_key <- Sys.getenv("MOSPI_KEY")
 ```r
 library(mospiR)
 
-# All datasets (fetches all pages)
+# All datasets (all pages)
 all <- list_datasets(api_key)
 
-# Filter by keyword
+# Datasets with "labour force" in the title
 labour <- list_datasets(api_key, query = "labour force")
 
-# Single page
+# Only page 1
 page1 <- list_datasets(api_key, page = 1)
 ```
 
@@ -69,10 +71,11 @@ download_dataset(
 
 | Function | Description |
 |---|---|
-| `list_datasets(api_key, page, query)` | List datasets; `page = NULL` fetches all pages; `query` filters by title (client-side) |
-| `list_files(dataset_id, api_key)` | Files in a dataset (`name`, `base64`, `size`, …) |
-| `download_file(dataset_id, file_name, folder_path, api_key)` | Download one file by name |
-| `download_dataset(dataset_id, folder_path, api_key)` | Download all files in a dataset |
+| `list_datasets(api_key, page, query)` | List the datasets. If `page = NULL`, get all the pages. Use `query` to find datasets by title. |
+| `list_files(dataset_id, api_key)` | List the files in a dataset (`name`, `base64`, `size`, and other columns) |
+| `download_file(dataset_id, file_name, folder_path, api_key)` | Download one file by its name |
+| `download_dataset(dataset_id, folder_path, api_key)` | Download all the files in a dataset |
 
-Failed requests retry up to 4 times with exponential backoff on 401, 429, and 5xx.
+If a request gives the status 401, 429, or 5xx, the package tries the request again.
+The package makes a maximum of 6 attempts. After each attempt, the time to the next attempt becomes two times longer.
 

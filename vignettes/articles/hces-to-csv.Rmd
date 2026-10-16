@@ -1,20 +1,15 @@
 ---
 title: "Working with HCES Nesstar files using nesstarR"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{Working with HCES Nesstar files using nesstarR}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 
-# pkgdown sets opts_knit$root.dir to the package root before knitting.
-# When rendering locally from vignettes/, ".." resolves to the package root.
+# pkgdown sets opts_knit$root.dir to the package root.
+# For a local render from vignettes/articles/, "../.." is the package root.
 pkg_root <- {
   rd <- knitr::opts_knit$get("root.dir")
-  if (!is.null(rd) && nzchar(rd)) normalizePath(rd) else normalizePath("..")
+  if (!is.null(rd) && nzchar(rd)) normalizePath(rd) else normalizePath("../..")
 }
 nesstar_path <- file.path(
   pkg_root, "data", "hces",
@@ -25,9 +20,12 @@ nesstar_path <- file.path(
 )
 ```
 
-NSS rounds 64, 66, and 68 come as `.Nesstar` binaries packed inside `.rar` archives.
-This vignette covers downloading one round with mospiR, extracting the archive, and
-reading the data with [nesstarR](https://github.com/saketkc/nesstarR).
+For NSS rounds 64, 66, and 68, the portal supplies `.Nesstar` binary files in `.rar` archives.
+This article shows these steps:
+
+1. Download one round with mospiR.
+2. Extract the archive.
+3. Read the data with [nesstarR](https://github.com/saketkc/nesstarR).
 
 ## Prerequisites
 
@@ -53,11 +51,12 @@ download_dataset(
 )
 ```
 
-The download is a `.rar` archive, about 54 MB for NSS 66 T2.
+For NSS 66 T2, the download is a `.rar` archive of approximately 54 MB.
 
 ## Extract the archive
 
-`unar` (macOS/Linux) and `unrar` (Windows) both work. Either must be on your `PATH`.
+Use `unar` on macOS or Linux. Use `unrar` on Windows.
+The tool must be on your `PATH`.
 
 ```{r extract, eval=FALSE}
 rar_file <- file.path(
@@ -67,13 +66,16 @@ rar_file <- file.path(
 system2("unar", c("-o", dirname(rar_file), shQuote(rar_file)))
 ```
 
-Extraction produces a folder with the `.Nesstar` binary, `ddi.xml` (variable metadata),
-and supporting documents.
+The extracted folder contains these items:
+
+- The `.Nesstar` binary file
+- `ddi.xml`, which contains the variable metadata
+- Other documents for the survey
 
 ## Parse the Nesstar file
 
-`nesstar_parse()` reads the binary header without loading any row data. Data loads
-only when you call `nesstar_read_dataset()` on a specific dataset number.
+`nesstar_parse()` reads only the header of the binary file. It does not read the rows.
+`nesstar_read_dataset()` reads the rows of one dataset number.
 
 ```{r parse}
 nb <- nesstar_parse(nesstar_path)
@@ -82,13 +84,14 @@ nb
 
 ## Dataset structure
 
-A single `.Nesstar` file holds multiple datasets, one per schedule block.
+One `.Nesstar` file contains many datasets. Each schedule block is one dataset.
 
 ```{r datasets}
 nesstar_datasets(nb)
 ```
 
-Dataset 21 is the food block: 4.8 million item-level rows across roughly 100,000 households.
+Dataset 21 is the food block. It has 4.8 million rows, one row for each item.
+The rows come from approximately 100,000 households.
 
 ## Variable listing
 
@@ -97,7 +100,7 @@ vars <- nesstar_variables(nb, dataset_number = 21)
 vars[, c("name", "variable_id", "width_value")]
 ```
 
-Key columns in the food block:
+Important columns in the food block:
 
 | Column | Meaning |
 |--------|---------|
@@ -119,9 +122,10 @@ head(food[, c(
 )])
 ```
 
-## Quick check: cereal spending by sector
+## Example: cereal expenditure by sector
 
-Weighted mean monthly expenditure on cereals (item codes 101-128), rural vs. urban:
+This example calculates the weighted mean of monthly expenditure on cereals (item codes 101-128).
+It gives one value for rural households and one value for urban households.
 
 ```{r explore}
 cereals <- food[food$Item_code >= 101 & food$Item_code <= 128, ]
@@ -140,7 +144,7 @@ cat(sprintf(
 
 ## Export to CSV
 
-`nesstar_export()` writes one CSV per dataset to `output_dir`.
+`nesstar_export()` writes one CSV file for each dataset to `output_dir`.
 
 ```{r export}
 output_dir <- file.path(tempdir(), "nss66t2")
@@ -148,7 +152,7 @@ nesstar_export(nb, output_dir = output_dir, compress = FALSE)
 list.files(output_dir)
 ```
 
-Pass `compress = TRUE` for `.csv.gz` output.
+To write `.csv.gz` files, set `compress = TRUE`.
 
 ## Round reference
 
@@ -167,4 +171,5 @@ Pass `compress = TRUE` for `.csv.gz` output.
 | NSS 68th T1 | `DDI-IND-MOSPI-NSSO-68Rnd-Sch1.0-July2011-June2012` | 2011-12 | Nesstar |
 | NSS 68th T2 | `DDI-IND-MOSPI-NSSO-68Rnd-Sch2.0-July2011-June2012` | 2011-12 | Nesstar |
 
-Rounds 57-63 unzip to CSVs. Rounds 64, 66, and 68 need nesstarR.
+For rounds 57-63, extract the zip archive to get CSV files.
+For rounds 64, 66, and 68, use nesstarR.

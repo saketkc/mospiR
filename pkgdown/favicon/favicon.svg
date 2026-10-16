@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1154" height="1154" viewBox="-77 0 1154 1154">
+  <!-- hex, same geometry and palette as nfhs5 -->
+  <polygon points="500,37 967.6,307 967.6,847 500,1117 32.4,847 32.4,307"
+           fill="#1C1C1E" stroke="#48484A" stroke-width="16" stroke-linejoin="round"/>
+
+  <!-- symbols from the MoSPI logo, in its order, on an arch -->
+  <g font-weight="700" text-anchor="middle" dominant-baseline="central">
+  <text x="207.7" y="569.8" font-family="Kohinoor Devanagari, Devanagari Sangam MN, Noto Sans Devanagari, sans-serif" font-size="230" fill="#4F7CFF">९</text>
+  <text x="325.7" y="431.6" font-family="SF Pro Display, Albert Sans, Helvetica Neue, Arial, sans-serif" font-size="190" fill="#4F7CFF">=</text>
+  <text x="500.0" y="380.0" font-family="SF Pro Display, Albert Sans, Helvetica Neue, Arial, sans-serif" font-size="230" fill="#4F7CFF">∫</text>
+  <text x="674.3" y="431.6" font-family="SF Pro Display, Albert Sans, Helvetica Neue, Arial, sans-serif" font-size="190" fill="#4F7CFF">Σ</text>
+  <text x="792.3" y="569.8" font-family="SF Pro Display, Albert Sans, Helvetica Neue, Arial, sans-serif" font-size="200" fill="#4F7CFF">o</text>
+  </g>
+
+</svg>

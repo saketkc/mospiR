@@ -16,8 +16,10 @@ knitr::opts_chunk$set(
 api_key <- Sys.getenv("MOSPI_KEY")
 ```
 
-mospiR downloads survey microdata from the [MoSPI Microdata Portal](https://microdata.gov.in),
-India's NSO repository. It wraps the NADA API and manages authentication, pagination, and retries.
+The mospiR package downloads survey microdata from the [MoSPI Microdata Portal](https://microdata.gov.in).
+This portal is the data repository of the National Statistics Office (NSO) of India.
+The package uses the NADA API of the portal.
+The package sends your API key, reads all the pages of results, and tries a failed request again.
 
 ## Installation
 
@@ -27,14 +29,15 @@ remotes::install_github("saketkc/mospiR")
 
 ## API key
 
-Register at <https://microdata.gov.in> and copy your key from **My Profile → API Key**.
-Add it to `~/.Renviron`:
+1. Register at <https://microdata.gov.in>.
+2. Copy your key from **My Profile → API Key**.
+3. Add the key to `~/.Renviron`:
 
 ```
 MOSPI_KEY=your_key_here
 ```
 
-Reload with `readRenviron("~/.Renviron")` or restart R.
+4. Run `readRenviron("~/.Renviron")` or start R again.
 
 ```{r key-env}
 library(mospiR)
@@ -43,8 +46,10 @@ api_key <- Sys.getenv("MOSPI_KEY")
 
 ## Listing datasets
 
-`list_datasets()` fetches all pages and returns one data frame. Pass `query` to filter by
-title (client-side, case-insensitive).
+`list_datasets()` gets all the pages and gives one data frame.
+To find datasets by title, use the `query` argument.
+The package compares `query` with the titles on your computer.
+The function ignores the difference between upper case and lower case letters.
 
 ```{r list-all}
 datasets <- list_datasets(api_key)
@@ -66,7 +71,8 @@ files[, c("name", "size")]
 
 ## Downloading files
 
-`download_file()` writes one file to `folder_path` and returns the local path invisibly.
+`download_file()` writes one file to `folder_path`.
+The function gives the local path of the file as an invisible value.
 
 ```{r download-file, eval=FALSE}
 path <- download_file(
@@ -77,7 +83,7 @@ path <- download_file(
 )
 ```
 
-`download_dataset()` downloads every file in the dataset:
+`download_dataset()` downloads all the files in the dataset:
 
 ```{r download-dataset, eval=FALSE}
 paths <- download_dataset(
@@ -88,7 +94,7 @@ paths <- download_dataset(
 length(paths)
 ```
 
-If the file name doesn't match, `download_file()` reports what's available:
+If the file name is not correct, `download_file()` shows the names of the available files:
 
 ```{r download-missing}
 result <- download_file(
@@ -99,8 +105,11 @@ result <- download_file(
 
 ## HCES rounds
 
-The portal has all rounds of the Household Consumer Expenditure Survey. Filter by title,
-then download in a loop:
+The portal has all the rounds of the Household Consumer Expenditure Survey (HCES).
+To get all the rounds, do these steps:
+
+1. Find the HCES datasets by title.
+2. Download each dataset in a loop.
 
 ```{r hces-find}
 hces_all <- list_datasets(api_key, query = "consumer expenditure")

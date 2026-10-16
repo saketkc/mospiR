@@ -9,20 +9,22 @@ list_datasets(api_key, page = NULL, query = NULL)
 \arguments{
 \item{api_key}{MoSPI API key.}
 
-\item{page}{Page number to fetch. `NULL` (default) fetches all pages.}
+\item{page}{Page number to get. If `NULL` (default), the function gets all
+the pages.}
 
-\item{query}{Title filter; case-insensitive substring match, applied client-side.}
+\item{query}{Text to find in the dataset titles. Upper case and lower case
+letters are equal. The comparison occurs on your computer.}
 }
 \value{
-Data frame with columns `id`, `idno`, `title`, etc. `NULL` on failure.
+A data frame with the columns `id`, `idno`, `title`, and other
+  columns. `NULL` if the request is not successful.
 }
 \description{
 List datasets from the MoSPI Microdata Portal
 }
 \examples{
-\dontrun{
-datasets <- list_datasets("your-api-key")
-labour <- list_datasets("your-api-key", query = "labour force")
-page1 <- list_datasets("your-api-key", page = 1)
-}
+\dontshow{if (nzchar(Sys.getenv("MOSPI_KEY"))) withAutoprint(\{ # examplesIf}
+page1 <- list_datasets(Sys.getenv("MOSPI_KEY"), page = 1)
+head(page1[, c("idno", "title")])
+\dontshow{\}) # examplesIf}
 }

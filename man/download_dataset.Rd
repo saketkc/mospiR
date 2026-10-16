@@ -4,23 +4,28 @@
 \alias{download_dataset}
 \title{Download all files for a dataset}
 \usage{
-download_dataset(dataset_id, folder_path, api_key)
+download_dataset(dataset_id, folder_path, api_key, overwrite = FALSE)
 }
 \arguments{
 \item{dataset_id}{Dataset `idno`.}
 
-\item{folder_path}{Destination directory; created if it does not exist.}
+\item{folder_path}{Destination directory. The function makes the directory
+if it does not exist.}
 
 \item{api_key}{MoSPI API key.}
+
+\item{overwrite}{If `FALSE` (default), the function does not download the
+files that are already in `folder_path`.}
 }
 \value{
-Character vector of saved file paths (invisibly).
+A character vector of the paths of the saved files, as an
+  invisible value.
 }
 \description{
 Download all files for a dataset
 }
 \examples{
-\dontrun{
-paths <- download_dataset("DDI-IND-NSO-ASI-2020-21", "./data", "your-api-key")
-}
+\dontshow{if (nzchar(Sys.getenv("MOSPI_KEY"))) withAutoprint(\{ # examplesIf}
+paths <- download_dataset("DDI-IND-NSO-ASI-2020-21", tempdir(), Sys.getenv("MOSPI_KEY"))
+\dontshow{\}) # examplesIf}
 }

@@ -1,0 +1,76 @@
+url: https://saket-choudhary.me/mospiR/
+
+template:
+  bootstrap: 5
+  light-switch: true
+  preset: default
+  bslib:
+    primary: "#c07828"
+    secondary: "#6b7689"
+    body-bg: "#f8f7f9"
+    body-color: "#171923"
+    border-color: "#dcdae0"
+    border-radius: "6px"
+    font-size-base: "1rem"
+    headings-font-weight: "700"
+    base_font: {google: "Albert Sans"}
+    heading_font: {google: "Albert Sans"}
+    code_font: {google: "JetBrains Mono"}
+  includes:
+    in_header: |
+      <script>
+        (function(){
+          var stored = localStorage.getItem('bs-color-scheme');
+          if (!stored) {
+            stored = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.setAttribute('data-bs-theme', stored);
+        })();
+      </script>
+      <meta name="author" content="Saket Choudhary">
+      <meta property="og:type" content="website">
+      <meta property="og:title" content="mospiR - MoSPI Microdata for R">
+      <meta property="og:description" content="R client for the MoSPI Microdata Portal: list datasets and download unit-level survey files.">
+      <meta property="og:site_name" content="mospiR">
+
+home:
+  title: "mospiR - MoSPI Microdata for R"
+
+navbar:
+  structure:
+    left:  [reference, articles]
+    right: [search, github, lightswitch]
+  components:
+    articles:
+      text: Articles
+      menu:
+      - text: "Getting started with mospiR"
+        href: articles/mospiR.html
+      - text: "Working with HCES Nesstar files using nesstarR"
+        href: articles/hces-to-csv.html
+    github:
+      icon: fab fa-github fa-lg
+      href: https://github.com/saketkc/mospiR
+      aria-label: GitHub
+
+reference:
+- title: "Find data"
+  contents:
+  - list_datasets
+  - list_files
+- title: "Download data"
+  contents:
+  - download_file
+  - download_dataset
+
+authors:
+  Saket Choudhary:
+    href: https://github.com/saketkc
+
+footer:
+  structure:
+    left: developed_by
+    right: built_with
+  components:
+    developed_by: "Developed by [Saket Choudhary](https://saketlab.org)"
+    built_with: "Built with [pkgdown](https://pkgdown.r-lib.org/)"

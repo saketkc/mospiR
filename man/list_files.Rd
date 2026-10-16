@@ -7,18 +7,19 @@
 list_files(dataset_id, api_key)
 }
 \arguments{
-\item{dataset_id}{Dataset `idno` (e.g., `"DDI-IND-NSO-ASI-2020-21"`).}
+\item{dataset_id}{Dataset `idno`, for example `"DDI-IND-NSO-ASI-2020-21"`.}
 
 \item{api_key}{MoSPI API key.}
 }
 \value{
-Data frame with columns `name`, `base64`, `size`, etc. `NULL` on failure.
+A data frame with the columns `name`, `base64`, `size`, and other
+  columns. `NULL` if the request is not successful.
 }
 \description{
 List files available for a dataset
 }
 \examples{
-\dontrun{
-files <- list_files("DDI-IND-NSO-ASI-2020-21", "your-api-key")
-}
+\dontshow{if (nzchar(Sys.getenv("MOSPI_KEY"))) withAutoprint(\{ # examplesIf}
+files <- list_files("DDI-IND-NSO-ASI-2020-21", Sys.getenv("MOSPI_KEY"))
+\dontshow{\}) # examplesIf}
 }

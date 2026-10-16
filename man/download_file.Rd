@@ -4,25 +4,31 @@
 \alias{download_file}
 \title{Download a single file from a dataset}
 \usage{
-download_file(dataset_id, file_name, folder_path, api_key)
+download_file(dataset_id, file_name, folder_path, api_key, .files_cache = NULL)
 }
 \arguments{
 \item{dataset_id}{Dataset `idno`.}
 
-\item{file_name}{File name as returned by [list_files()].}
+\item{file_name}{File name from the `name` column of [list_files()].}
 
-\item{folder_path}{Destination directory; created if it does not exist.}
+\item{folder_path}{Destination directory. The function makes the directory
+if it does not exist.}
 
 \item{api_key}{MoSPI API key.}
+
+\item{.files_cache}{A file list from [list_files()]. If `NULL` (default),
+the function gets the file list from the portal. Use this argument when
+you download many files from one dataset. This prevents more API requests.}
 }
 \value{
-Path to the saved file (invisibly). `NULL` on failure.
+The path of the saved file, as an invisible value. `NULL` if the
+  download is not successful.
 }
 \description{
 Download a single file from a dataset
 }
 \examples{
-\dontrun{
-path <- download_file("DDI-IND-NSO-ASI-2020-21", "ASI_DATA.zip", "./data", "your-api-key")
-}
+\dontshow{if (nzchar(Sys.getenv("MOSPI_KEY"))) withAutoprint(\{ # examplesIf}
+path <- download_file("DDI-IND-NSO-ASI-2020-21", "ASI_DATA.zip", tempdir(), Sys.getenv("MOSPI_KEY"))
+\dontshow{\}) # examplesIf}
 }

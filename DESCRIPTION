@@ -1,16 +1,17 @@
 Package: mospiR
 Type: Package
-Title: Client for the MoSPI Microdata portal
+Title: Client for the 'MoSPI' Microdata Portal
 Version: 0.1.0
-Authors@R: person("Saket", "Choudhary", email = "saketkc@gmail.com", role = c("aut", "cre"))
-Description: Download microdata from the MoSPI (Ministry of Statistics and
-    Programme Implementation, Government of India) Microdata Portal
-    <https://microdata.gov.in>. Provides functions to list datasets, list
-    files within a dataset, and download individual files or entire datasets
-    using the MoSPI NADA API.
+Authors@R:
+    person("Saket", "Choudhary", , "saketc@iitb.ac.in", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0001-5202-7633"))
+Description: Download unit-level survey microdata from the Ministry of
+    Statistics and Programme Implementation ('MoSPI', Government of India)
+    Microdata Portal <https://microdata.gov.in>. Provides functions to list
+    datasets, list files within a dataset, and download individual files or
+    entire datasets through the portal's 'NADA' API.
 License: MIT + file LICENSE
 Encoding: UTF-8
-RoxygenNote: 7.3.3
 Depends:
     R (>= 4.1.0)
 Imports:
@@ -18,10 +19,10 @@ Imports:
 Suggests:
     testthat (>= 3.0.0),
     knitr,
-    rmarkdown,
-    pkgdown,
-    nesstarR
+    rmarkdown
 VignetteBuilder: knitr
 Config/testthat/edition: 3
-URL: https://saketkc.github.io/mospiR, https://github.com/saketkc/mospiR
+Config/Needs/website: nesstarR, pkgdown
+URL: https://saket-choudhary.me/mospiR/, https://github.com/saketkc/mospiR
 BugReports: https://github.com/saketkc/mospiR/issues
+Config/roxygen2/version: 8.1.0
