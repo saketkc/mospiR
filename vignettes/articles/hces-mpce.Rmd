@@ -5,11 +5,10 @@ title: "Reproduce a published HCES estimate"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 
-# pkgdown sets root.dir to the package root; a local render runs from vignettes/articles/
-pkg_root <- normalizePath(knitr::opts_knit$get("root.dir") %||% "../..")
+# pkgdown renders from vignettes/articles/, so the download chunk writes to vignettes/articles/data/hces
 id <- "DDI-IND-MOSPI-NSSO-62Rnd-Sch1.0-2005-06"
 zip_file <- file.path(
-  pkg_root, "data", "hces", id,
+  "data", "hces", id,
   "Household Consumer Expenditure, July 2005 - June 2006_Csv.zip"
 )
 ```
@@ -41,6 +40,9 @@ csv_zip
 zip_file <- download_file(id, csv_zip, file.path("data", "hces", id), api_key,
   .files_cache = files
 )
+```
+
+```{r download-if-missing, ref.label="download", include=FALSE, eval=!file.exists(zip_file)}
 ```
 
 ## Find the blocks in the archive

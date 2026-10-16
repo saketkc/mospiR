@@ -17,6 +17,7 @@ jobs:
       group: pkgdown-deploy
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      MOSPI_KEY: ${{ secrets.MOSPI_KEY }}
       # nginx maps <pkg>.saketlab.org to /var/www/r-pkgdown/<pkg>, lowercase
       SITE_DIR: /var/www/r-pkgdown/mospir
 
@@ -34,11 +35,14 @@ jobs:
           extra-packages: any::pkgdown, local::.
           needs: website
 
-      # The HCES article needs NSS 62 data that CI does not have; the swap step keeps the live copy.
+      # The HCES article downloads the NSS 62 CSV zip (46 MB) when it is missing
+      - uses: actions/cache@v4
+        with:
+          path: vignettes/articles/data/hces
+          key: hces-DDI-IND-MOSPI-NSSO-62Rnd-Sch1.0-2005-06
+
       - name: Build pkgdown site
-        run: |
-          rm -f vignettes/articles/hces-mpce.Rmd
-          Rscript -e 'pkgdown::build_site(new_process = FALSE, install = FALSE)'
+        run: Rscript -e 'pkgdown::build_site(new_process = FALSE, install = FALSE)'
 
       - name: Prepare deploy directory
         uses: appleboy/ssh-action@v1.0.3
@@ -72,10 +76,6 @@ jobs:
           port: ${{ secrets.HOSTINGER_PORT || 22 }}
           script: |
             cd ${{ env.SITE_DIR }}
-            # keep the locally built HCES article (Rscript pkgdown/build.R + manual upload)
-            for f in hces-mpce.html hces-mpce.md; do
-              [ -f docs/articles/$f ] && cp docs/articles/$f docs.new/articles/
-            done
             rm -rf docs.old
             mv docs docs.old 2>/dev/null || true
             mv docs.new docs

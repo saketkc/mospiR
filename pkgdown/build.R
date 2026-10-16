@@ -1,8 +1,6 @@
-# Local site build; the HCES article needs NSS 62 data under data/hces, so CI cannot run it.
+# Local site build:
 #   Rscript pkgdown/build.R
-# Set MOSPI_KEY to evaluate the getting-started vignette against the live API.
-
-stopifnot(dir.exists("data/hces"))
+# Needs MOSPI_KEY: the vignettes call the live API, and the HCES article downloads the NSS 62 CSV zip when it is missing.
 
 # pkgdown renders every top-level .md as a public page; agent notes are internal
 notes <- c("CLAUDE.md", "AGENTS.md")
