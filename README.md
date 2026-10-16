@@ -67,15 +67,3 @@ download_dataset(
 )
 ```
 
-## Functions
-
-| Function | Description |
-|---|---|
-| `list_datasets(api_key, page, query)` | List the datasets. If `page = NULL`, get all the pages. Use `query` to find datasets by title. |
-| `list_files(dataset_id, api_key)` | List the files in a dataset (`name`, `base64`, `size`, and other columns) |
-| `download_file(dataset_id, file_name, folder_path, api_key)` | Download one file by its name |
-| `download_dataset(dataset_id, folder_path, api_key)` | Download all the files in a dataset |
-
-If a request gives the status 401, 429, or 5xx, the package tries the request again.
-The package makes a maximum of 6 attempts. After each attempt, the time to the next attempt becomes two times longer.
-
