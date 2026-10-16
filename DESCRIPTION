@@ -23,6 +23,6 @@ Suggests:
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Config/Needs/website: nesstarR, pkgdown
-URL: https://saket-choudhary.me/mospiR/, https://github.com/saketkc/mospiR
+URL: https://mospir.saketlab.org, https://github.com/saketkc/mospiR
 BugReports: https://github.com/saketkc/mospiR/issues
 Config/roxygen2/version: 8.1.0

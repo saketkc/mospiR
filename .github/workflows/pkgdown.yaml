@@ -1,0 +1,84 @@
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+name: pkgdown
+
+permissions:
+  contents: read
+
+jobs:
+  pkgdown:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pkgdown-deploy
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      # nginx maps <pkg>.saketlab.org to /var/www/r-pkgdown/<pkg>, lowercase
+      SITE_DIR: /var/www/r-pkgdown/mospir
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::pkgdown, local::.
+          needs: website
+
+      # The HCES article needs NSS 66 data that CI does not have; the swap step keeps the live copy.
+      # pkgdown publishes every top-level .md, so agent notes go too.
+      - name: Build pkgdown site
+        run: |
+          rm -f vignettes/articles/hces-to-csv.Rmd CLAUDE.md AGENTS.md
+          Rscript -e 'pkgdown::build_site(new_process = FALSE, install = FALSE)'
+
+      - name: Prepare deploy directory
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOSTINGER_HOST }}
+          username: ${{ secrets.HOSTINGER_USER }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          port: ${{ secrets.HOSTINGER_PORT || 22 }}
+          script: |
+            rm -rf ${{ env.SITE_DIR }}/docs.new
+            mkdir -p ${{ env.SITE_DIR }}/docs.new
+
+      - name: Upload site
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOSTINGER_HOST }}
+          username: ${{ secrets.HOSTINGER_USER }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          port: ${{ secrets.HOSTINGER_PORT || 22 }}
+          source: "docs/*"
+          target: "${{ env.SITE_DIR }}/docs.new/"
+          strip_components: 1
+          overwrite: true
+
+      - name: Swap live site
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOSTINGER_HOST }}
+          username: ${{ secrets.HOSTINGER_USER }}
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          port: ${{ secrets.HOSTINGER_PORT || 22 }}
+          script: |
+            cd ${{ env.SITE_DIR }}
+            # keep the locally built HCES article (Rscript pkgdown/build.R + manual upload)
+            for f in hces-to-csv.html hces-to-csv.md; do
+              [ -f docs/articles/$f ] && cp docs/articles/$f docs.new/articles/
+            done
+            rm -rf docs.old
+            mv docs docs.old 2>/dev/null || true
+            mv docs.new docs
+            rm -rf docs.old
+            echo "Deployed to https://mospir.saketlab.org"
