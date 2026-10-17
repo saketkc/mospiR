@@ -2,6 +2,7 @@
 
 export(download_dataset)
 export(download_file)
+export(extract_archive)
 export(list_datasets)
 export(list_files)
 importFrom(httr2,
