@@ -2,13 +2,18 @@ BASE_URL <- "https://microdata.gov.in/NADA/index.php/api"
 MAX_RETRIES <- 6
 RETRY_DELAY <- 2
 
-#' @importFrom httr2 request req_headers req_url_query req_perform resp_body_json resp_body_raw req_retry resp_status req_throttle
+#' @importFrom httr2 request req_headers req_url_query req_perform resp_body_json req_retry resp_status req_throttle req_error resp_header
 NULL
 
-.request_with_retry <- function(url, api_key, query = list()) {
-  req <- request(url) |>
+# one throttle per host name, shared by all requests
+.mospi_request <- function(url, api_key) {
+  request(url) |>
     req_headers("X-API-KEY" = api_key) |>
-    req_throttle(rate = 10 / 60) |>
+    req_throttle(rate = 10 / 60)
+}
+
+.request_with_retry <- function(url, api_key, query = list(), path = NULL) {
+  req <- .mospi_request(url, api_key) |>
     req_retry(
       max_tries = MAX_RETRIES,
       retry_on_failure = FALSE,
@@ -20,7 +25,7 @@ NULL
     req <- do.call(req_url_query, c(list(req), query))
   }
 
-  req_perform(req)
+  req_perform(req, path = path)
 }
 
 .fetch_page <- function(api_key, page) {
@@ -44,26 +49,26 @@ NULL
                                expected_size = NULL) {
   url <- paste0(BASE_URL, "/fileslist/download/", dataset_id, "/", b64)
   file_path <- file.path(folder_path, file_name)
+  # rename only when complete; a connection failure keeps the .part to resume
+  part_path <- paste0(file_path, ".part")
   tryCatch(
     {
-      resp <- .request_with_retry(url, api_key)
-      body <- resp_body_raw(resp)
+      if (!.resume_part(url, api_key, file_name, part_path)) {
+        .request_with_retry(url, api_key, path = part_path)
+      }
 
-      if (length(body) == 0) {
+      actual <- file.size(part_path)
+      if (is.na(actual) || actual == 0) {
+        unlink(part_path)
         message("Cannot download '", file_name, "': the response body is empty")
         return(NULL)
       }
-
-      writeBin(body, file_path)
-
-      if (!file.exists(file_path) || file.size(file_path) == 0) {
-        if (file.exists(file_path)) file.remove(file_path)
-        message("Cannot download '", file_name, "': the file is empty after the write")
+      if (!file.rename(part_path, file_path)) {
+        message("Cannot move the downloaded file to '", file_path, "'")
         return(NULL)
       }
 
       if (!is.null(expected_size)) {
-        actual <- file.size(file_path)
         expected_bytes <- .parse_size_string(expected_size)
         if (!is.na(expected_bytes) && actual < expected_bytes * 0.9) {
           message(
@@ -76,18 +81,58 @@ NULL
 
       message(
         "Downloaded: ", file_path,
-        " (", format(file.size(file_path), big.mark = ","), " bytes)"
+        " (", format(actual, big.mark = ","), " bytes)"
       )
       file_path
     },
     error = function(e) {
-      if (file.exists(file_path) && file.size(file_path) == 0) {
-        file.remove(file_path)
-      }
+      # httr2 writes the HTTP error body to the .part; never resume it
+      if (inherits(e, "httr2_http")) unlink(part_path)
       message("Cannot download '", file_name, "': ", conditionMessage(e))
+      if (isTRUE(file.size(part_path) > 0)) {
+        message("The partial download is kept. The next download tries to continue it.")
+      }
       NULL
     }
   )
+}
+
+#' Continue a partial download with an HTTP Range request
+#'
+#' FALSE (part_path removed) means download the full file again; always the
+#' case on microdata.gov.in, which sends 500 for every Range request.
+#' @noRd
+.resume_part <- function(url, api_key, file_name, part_path) {
+  from <- file.size(part_path)
+  if (is.na(from) || from == 0) {
+    return(FALSE)
+  }
+  chunk_path <- paste0(part_path, ".chunk")
+  on.exit(unlink(chunk_path), add = TRUE)
+
+  # no retry: .request_with_retry() backs off on 500, a common Range rejection
+  resp <- .mospi_request(url, api_key) |>
+    req_headers(Range = paste0("bytes=", from, "-")) |>
+    req_error(is_error = function(resp) FALSE) |>
+    req_perform(path = chunk_path)
+  status <- resp_status(resp)
+
+  # server ignored Range and sent the full file
+  if (status == 200 && file.size(chunk_path) > 0 && file.rename(chunk_path, part_path)) {
+    return(TRUE)
+  }
+
+  # Content-Range: bytes <from>-<last>/<total>; total changes with the file
+  content_range <- resp_header(resp, "content-range", default = "")
+  total <- suppressWarnings(as.numeric(sub("^.*/", "", content_range)))
+  if (status == 206 && startsWith(content_range, paste0("bytes ", from, "-")) &&
+    isTRUE(from + file.size(chunk_path) == total) && file.append(part_path, chunk_path)) {
+    message("Resumed '", file_name, "' from byte ", format(from, big.mark = ","))
+    return(TRUE)
+  }
+  message("The server did not continue the download of '", file_name, "'. The download starts again.")
+  unlink(part_path)
+  FALSE
 }
 
 #' Convert a size text (for example, "116.95 MB") to bytes

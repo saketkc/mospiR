@@ -1,7 +1,7 @@
 Package: mospiR
 Type: Package
 Title: Client for the 'MoSPI' Microdata Portal
-Version: 0.1.0
+Version: 0.1.1.9000
 Authors@R:
     person("Saket", "Choudhary", , "saketc@iitb.ac.in", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-5202-7633"))
@@ -20,6 +20,7 @@ Imports:
 Suggests:
     archive,
     testthat (>= 3.0.0),
+    withr,
     knitr,
     rmarkdown
 VignetteBuilder: knitr
@@ -27,4 +28,4 @@ Config/testthat/edition: 3
 Config/Needs/website: pkgdown
 URL: https://mospir.saketlab.org, https://github.com/saketkc/mospiR
 BugReports: https://github.com/saketkc/mospiR/issues
-Config/roxygen2/version: 8.1.0
+Config/roxygen2/version: 8.1.1
